@@ -1701,7 +1701,7 @@ function vPlano(c){
   const AM=c.audienceMap||{};const lines=x=>String(x||"").split("\n").map(s=>s.trim().replace(/^[-•]\s*/,"")).filter(Boolean);
   const amCols=[["alert","Dores","pains"],["lock","Objeções","objections"],["check","Precisa entender antes de confiar","trust"],["route","Comportamentos e contradições","contradictions"],["chat","Palavras que o público usa","language"]];
   const amHas=amCols.some(x=>lines(AM[x[2]]).length);
-  const mapa=`<section class="panel s12"><div class="phead">${sh("users","Mapa do público","Alimenta os ganchos, roteiros e stories gerados pela IA")}</div>
+  const mapa=`<section class="panel s12"><div class="phead">${sh("users","Mapa do público","Base para ganchos, roteiros e stories")}</div>
     ${amHas?`<div class="amap">${amCols.map(([icn,l,k])=>`<div class="amc"><div class="th"><span class="ico sm">${ic(icn)}</span><b>${l}</b></div>${lines(AM[k]).length?(k==="language"?`<div class="pats">${lines(AM[k]).map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:`<ul class="clean">${lines(AM[k]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`):'<p class="small faint">A definir</p>'}</div>`).join("")}</div>`:`<div class="empty">Ainda não preenchido. Em Editar plano, liste as dores, objeções, o que o público precisa entender antes de confiar, as contradições e as palavras que ele usa.</div>`}</section>`;
   /* objetivos */
   const OM=c.objMix||{};const cps2=S.posts.filter(p=>inCycle(c,p.date)&&p.format!=="Stories");const n2=cps2.length||1;
@@ -2882,7 +2882,7 @@ function vStories(c){
     <div class="row" style="gap:6px"><button class="btn sm${storyFilter?"":" primary"}" data-sf="">Todas</button>${SCATS.filter(([k])=>S.stories.some(x=>x.category===k)).map(([k,l])=>`<button class="btn sm${storyFilter===k?" primary":""}" data-sf="${k}">${l}</button>`).join("")}</div>
     ${ideas.length?`<div class="sgrid">${ideas.map(storyCard).join("")}</div>`:`<div class="empty">Nenhuma sequência ainda. Gere a primeira acima.</div>`}
   </section>
-  <details class="blk" data-k="sctx"${S.editStories?" open":""}><summary><span class="s"><h3>Contexto da conta</h3><span class="small muted">Base que a IA usa: papel dos stories, assuntos, quadros fixos e limites</span></span></summary><div class="in">
+  <details class="blk" data-k="sctx"${S.editStories?" open":""}><summary><span class="s"><h3>Contexto da conta</h3><span class="small muted">Base dos stories: papel dos stories, assuntos, quadros fixos e limites</span></span></summary><div class="in">
     ${S.editStories?`<div class="grid2">${[["goal","Papel dos stories na estratégia"],["topics","Assuntos que geram conversa com esse público"],["rituals","Quadros fixos e rotina diária"],["show","O que a marca mostra"],["avoid","O que não mostrar"],["weekly","Chamada semanal (DM, orçamento, link)"]].map(([k,l])=>`<label class="f" for="sc-${k}">${l}<textarea id="sc-${k}" rows="3">${esc(ctx[k])}</textarea></label>`).join("")}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-st="cancel">Cancelar</button><button class="btn primary" data-st="save-ctx">Salvar contexto</button></div>`
     :`<div class="quad">${[["target","Papel na estratégia","goal"],["users","Assuntos que geram conversa","topics"],["calendar","Quadros fixos","rituals"],["profile","O que mostrar","show"],["alert","O que não mostrar","avoid"],["tag","Chamada semanal","weekly"]].map(([i,l,k])=>`<div class="tile"><div class="th"><span class="ico sm">${ic(i)}</span><p class="eyebrow">${l}</p></div><p style="white-space:pre-wrap">${ctx[k]?esc(ctx[k]):'<span class="faint">A definir</span>'}</p></div>`).join("")}</div><div class="row" style="justify-content:flex-end"><button class="btn sm" data-st="edit">Editar contexto</button></div>`}
   </div></details>
@@ -3174,5 +3174,23 @@ function mount(){
  box.addEventListener("change",async e=>{if(e.target.id!=="bk-file")return;const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!d||!d.collections)throw new Error("arquivo inválido");const n=Object.values(d.collections).reduce((a,x)=>a+x.length,0);window.__bkPending=d;document.getElementById("bk-st").innerHTML=n+" registros. Isso substitui os que tiverem o mesmo id. <button type=button id=bk-yes>Importar</button> <button type=button id=bk-no>Cancelar</button>"}catch(err){st("Arquivo inválido.")}e.target.value=""});
 }
 if(document.readyState!=="loading")mount();else document.addEventListener("DOMContentLoaded",mount);
+})();
+</script><script>
+/* Versão GitHub: retira da tela tudo o que depende da IA do Claude */
+(function(){
+const NOTE=t=>'<p class="small muted" style="margin:6px 0">'+t+'</p>';
+const DROP=['[data-act="post-script"]','[data-act="run-ai"]','[data-act="stop-ai"]','[data-act="parse-insights"]','[data-act="post-parse"]','[data-hw="suggest"]','[data-hw="regen"]','[data-hw="ref-ai"]','[data-ad="go"]','[data-nd="ai"]','[data-aform]','[data-atext]','label[for="p-paste"]','label[for="in-text"]','label[for="p-img"]','label[for="in-img"]','#p-ai-st','#in-img-names','#p-paste-st','#in-status','details[data-k="weekly"]'];
+function prune(){
+ document.querySelectorAll('[data-act="copy-post-prompt"]').forEach(b=>{const box=b.closest('.cpbox');(box||b).remove()});
+ document.querySelectorAll(DROP.join(',')).forEach(el=>el.remove());
+ document.querySelectorAll('details[data-k="addref"]:not([data-pruned])').forEach(d=>{d.setAttribute('data-pruned','1');const sum=d.querySelector('summary');d.innerHTML='';if(sum){d.appendChild(sum)}d.insertAdjacentHTML('beforeend','<div class="in">'+NOTE('Para analisar uma referência, mande o link no chat com o Claude. A análise volta pronta para importar no banco de ganchos.')+'</div>')});
+ document.querySelectorAll('#sg-theme').forEach(t=>{const sec=t.closest('section');if(sec&&!sec.dataset.pruned){sec.dataset.pruned='1';const h=sec.querySelector('.sh,h2,h3');sec.innerHTML='';if(h)sec.appendChild(h.closest('.sh')||h);sec.insertAdjacentHTML('beforeend',NOTE('Para receber ideias de stories, peça no chat com o Claude. Aqui ficam salvas as ideias e o que já foi usado.'))}});
+ document.querySelectorAll('p.small.muted,span.small.muted').forEach(el=>{const t=el.textContent;if(/IA indispon|usa a IA da p|A IA tenta ler|A IA lê o que|leitura começa sozinha|análise começa sozinha/.test(t))el.remove()});
+ document.querySelectorAll('[data-hw="manual"]').forEach(b=>{if(b.textContent.trim()==="Escolher técnica sem IA")b.textContent="Escolher técnica"});
+ document.querySelectorAll('button').forEach(b=>{if(/Gerar .*com IA|Ler com IA|Sugerir .*com IA/.test(b.textContent))b.remove()});
+}
+let q=false;const run=()=>{if(q)return;q=true;requestAnimationFrame(()=>{q=false;prune()})};
+const start=()=>{prune();new MutationObserver(run).observe(document.body,{childList:true,subtree:true})};
+if(document.readyState!=="loading")start();else document.addEventListener("DOMContentLoaded",start);
 })();
 </script></body></html>
